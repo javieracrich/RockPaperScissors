@@ -84,6 +84,8 @@ describe("RockPaperScissors Unit tests", function () {
 
     //act
     await RPS1.enrollPlayer1(bet);
+
+    //assert
     await expect(RPS1.enrollPlayer1(bet)).to.be.revertedWith("you can only play one game at once");
   });
 
@@ -107,11 +109,9 @@ describe("RockPaperScissors Unit tests", function () {
 
     await dai2.approve(RPS2.address, bet);
 
+    //assert
     await expect(RPS2.enrollPlayer2(bet, gameId)).to.emit(RPS, "Player2Enrolled").withArgs(gameId);
     await expect(RPS2.enrollPlayer2(bet, gameId)).to.be.revertedWith("you can only play one game at once");
-
-
-
   });
 
   it("should enroll player 1 and 2 - happy path", async function () {
@@ -152,6 +152,7 @@ describe("RockPaperScissors Unit tests", function () {
     await expect(RPS1.enrollPlayer1(bet)).to.emit(RPS, "Player1Enrolled").withArgs(gameId);
 
     const expectedBet = await RPS1.gameBet(gameId);
+
     //assert
     await expect((await RPS1.lastGameId()).toString()).to.equal(gameId + "");
     await expect(expectedBet.toString()).to.equal(bet.toString());
@@ -184,14 +185,12 @@ describe("RockPaperScissors Unit tests", function () {
     await dai2.approve(RPS2.address, bet);
 
     const inexistentGame = 56
-
+    //assert
     await expect(RPS2.enrollPlayer2(bet, inexistentGame)).to.be.revertedWith("there is no player 1 for this game");
 
   });
 
   it("player 1 tries to enroll again after player 2 did", async function () {
-
-
     //arrange
     const [RPS, dai] = await deployContracts();
     const bet = utils.parseEther("1000");
@@ -210,10 +209,9 @@ describe("RockPaperScissors Unit tests", function () {
 
     await dai2.approve(RPS2.address, bet);
 
+    //assert 
     await expect(RPS2.enrollPlayer2(bet, gameId)).to.emit(RPS, "Player2Enrolled").withArgs(gameId);
-
     await expect(RPS1.enrollPlayer1(bet)).to.be.revertedWith("you can only play one game at once");
-
   });
 
   it("player 1 plays, then player 2, it is a tie", async function () {
@@ -237,11 +235,10 @@ describe("RockPaperScissors Unit tests", function () {
 
     await expect(RPS2.enrollPlayer2(bet, gameId)).to.emit(RPS, "Player2Enrolled").withArgs(gameId);
 
-
     //start playing
-
     await RPS1.player1Plays(GameValue.PAPER, gameId);
 
+    //assert 
     await expect(await RPS2.player2Plays(GameValue.PAPER, gameId)).to.emit(RPS1, "Tie").withArgs(gameId);
     await expect((await RPS2.balances(player1.address)).toString()).to.equal(utils.parseEther("1000").toString());
     await expect((await RPS2.balances(player2.address)).toString()).to.equal(utils.parseEther("1000").toString());
@@ -249,7 +246,6 @@ describe("RockPaperScissors Unit tests", function () {
   });
 
   it("player 1 plays, then player 2, player 1 wins", async function () {
-
     //arrange
     const [RPS, dai] = await deployContracts();
     const bet = utils.parseEther("1000");
@@ -267,16 +263,14 @@ describe("RockPaperScissors Unit tests", function () {
     await expect(RPS1.enrollPlayer1(bet)).to.emit(RPS, "Player1Enrolled").withArgs(gameId);
 
     await dai2.approve(RPS2.address, bet);
-
     await expect(RPS2.enrollPlayer2(bet, gameId)).to.emit(RPS, "Player2Enrolled").withArgs(gameId);
-
 
     //start playing
 
     await RPS1.player1Plays(GameValue.PAPER, gameId);
 
+    //assert 
     await expect(await RPS2.player2Plays(GameValue.ROCK, gameId)).to.emit(RPS1, "Player1Wins").withArgs(gameId);
-
     await expect((await RPS2.balances(player1.address)).toString()).to.equal(utils.parseEther("2000").toString());
     await expect((await RPS2.balances(player2.address)).toString()).to.equal(utils.parseEther("0").toString());
   });
@@ -297,24 +291,19 @@ describe("RockPaperScissors Unit tests", function () {
 
     //act
     await expect(RPS1.enrollPlayer1(bet)).to.emit(RPS, "Player1Enrolled").withArgs(gameId);
-
     await dai2.approve(RPS2.address, bet);
-
     await expect(RPS2.enrollPlayer2(bet, gameId)).to.emit(RPS, "Player2Enrolled").withArgs(gameId);
 
 
     //start playing
-
     await RPS1.player1Plays(GameValue.PAPER, gameId);
-
+    //assert 
     await expect(await RPS2.player2Plays(GameValue.SCISSORS, gameId)).to.emit(RPS1, "Player2Wins").withArgs(gameId);
-
     await expect((await RPS2.balances(player1.address)).toString()).to.equal(utils.parseEther("0").toString());
     await expect((await RPS2.balances(player2.address)).toString()).to.equal(utils.parseEther("2000").toString());
   });
 
   it("player 1 plays and tries to withdraw bet in less than a week", async function () {
-    //arrange
     const [RPS, dai] = await deployContracts();
     const bet = utils.parseEther("1000");
     const gameId = 1;
@@ -379,15 +368,11 @@ describe("RockPaperScissors Unit tests", function () {
     await expect((await RPS2.player1ForGame(gameId)).toString()).to.equal("0x0000000000000000000000000000000000000000");
     await expect((await RPS2.balances(player2.address)).toString()).to.equal("0");
     await expect((await dai2.balanceOf(player2.address))).to.equal(utils.parseEther("3000"));
-
-
   });
-
 
   async function IncreaseTime(contract: RockPaperScissors, seconds: number) {
     let time = await contract.getCurrentTime();
     time = time.add(seconds);
     await contract.setCurrentTime(time);
   }
-
 });
