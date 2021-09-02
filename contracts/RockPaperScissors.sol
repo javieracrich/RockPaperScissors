@@ -161,11 +161,13 @@ contract RockPaperScissors is Ownable {
         activePlayer[_msgSender()] = false;
         player1ForGame[gameId] = address(0);
         balances[_msgSender()] = 0;
+
         emit Player1WithdrewBalance(gameId);
     }
 
     function player2WithdrawBalance(uint256 gameId) public {
         require(player2ForGame[gameId] == _msgSender(), "invalid game id");
+
         bool success = erc20.transfer(_msgSender(), balances[_msgSender()]);
         if (!success) {
             revert TransferFailed();
@@ -173,6 +175,7 @@ contract RockPaperScissors is Ownable {
         activePlayer[_msgSender()] = false;
         player2ForGame[gameId] = address(0);
         balances[_msgSender()] = 0;
+
         emit Player2WithdrewBalance(gameId);
     }
 
