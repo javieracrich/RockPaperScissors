@@ -31,6 +31,7 @@ uint256 constant oneweek = 604800;
 contract RockPaperScissors is Ownable {
     IERC20 private erc20;
     uint256 public time = 0;
+    uint256 public lastGameId = 0;
 
     //gameid => player 1
     mapping(uint256 => address) public player1ForGame;
@@ -49,7 +50,6 @@ contract RockPaperScissors is Ownable {
     //player => isPlaying ?
     mapping(address => bool) public activePlayer;
 
-    uint256 public lastGameId = 0;
 
     event Player1Enrolled(uint256 gameId);
     event Player2Enrolled(uint256 gameId);
@@ -63,7 +63,7 @@ contract RockPaperScissors is Ownable {
         erc20 = _erc20;
     }
 
-    function enrollPlayer1(uint256 _amount) public {
+    function enrollPlayer1(uint256 _amount) external {
         //checks
         require(activePlayer[_msgSender()] == false, "you can only play one game at once");
 
@@ -84,7 +84,7 @@ contract RockPaperScissors is Ownable {
         emit Player1Enrolled(lastGameId);
     }
 
-    function enrollPlayer2(uint256 _amount, uint256 gameId) public {
+    function enrollPlayer2(uint256 _amount, uint256 gameId) external {
         //checks
         require(activePlayer[_msgSender()] == false, "you can only play one game at once");
         require(status[gameId] == GameStatus.ENROLLING, "this game does not allow new players");
@@ -106,14 +106,14 @@ contract RockPaperScissors is Ownable {
         emit Player2Enrolled(gameId);
     }
 
-    function player1Plays(GameValue _val, uint256 gameId) public onlyActiveGame(gameId) {
+    function player1Plays(GameValue _val, uint256 gameId) external onlyActiveGame(gameId) {
         require(_msgSender() == player1ForGame[gameId], "you are not playing in this game");
 
         gamePlays[_msgSender()][gameId] = _val;
         player1Timestamp[gameId] = getCurrentTime();
     }
 
-    function player2Plays(GameValue _val, uint256 gameId) public onlyActiveGame(gameId) {
+    function player2Plays(GameValue _val, uint256 gameId) external onlyActiveGame(gameId) {
         //checks
         require(_msgSender() == player2ForGame[gameId], "you are not playing in this game");
         require(player1ForGame[gameId] != address(0), "you can't play, player 1 withdrew the bet");
@@ -149,7 +149,7 @@ contract RockPaperScissors is Ownable {
         status[gameId] = GameStatus.FINISHED;
     }
 
-    function player1WithdrawBalance(uint256 gameId) public {
+    function player1WithdrawBalance(uint256 gameId) external {
         require(player1ForGame[gameId] == _msgSender(), "invalid game id");
         require((player1Timestamp[gameId] + oneweek) < getCurrentTime(), "you cannnot withdraw your bet yet");
         require(status[gameId] == GameStatus.STARTED, "this game is not started");
@@ -165,7 +165,7 @@ contract RockPaperScissors is Ownable {
         emit Player1WithdrewBalance(gameId);
     }
 
-    function player2WithdrawBalance(uint256 gameId) public {
+    function player2WithdrawBalance(uint256 gameId) external {
         require(player2ForGame[gameId] == _msgSender(), "invalid game id");
 
         bool success = erc20.transfer(_msgSender(), balances[_msgSender()]);
