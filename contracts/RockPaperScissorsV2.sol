@@ -244,7 +244,7 @@ contract RockPaperScissorsV2 is Context {
     function player1WithdrawBalance(uint256 gameId) external {
         require(player1ForGame[gameId] == _msgSender(), "invalid game id");
         require((player1Timestamp[gameId] + 1 weeks) < getCurrentTime(), "you cannnot withdraw your bet yet");
-        require(status[gameId] == GameStatus.COMMITING, "this game is not started");
+        require(status[gameId] == GameStatus.COMMITING || status[gameId] == GameStatus.REVEALING , "this game is not in the COMMITING or REVEALING status");
 
         bool success = erc20.transfer(_msgSender(), gameBet[gameId]);
         if (!success) {
@@ -254,19 +254,6 @@ contract RockPaperScissorsV2 is Context {
         balances[_msgSender()] = 0;
 
         emit Player1WithdrewBalance(gameId);
-    }
-
-    function player2WithdrawBalance(uint256 gameId) external {
-        require(player2ForGame[gameId] == _msgSender(), "invalid game id");
-
-        bool success = erc20.transfer(_msgSender(), gameBet[gameId]);
-        if (!success) {
-            revert TransferFailed();
-        }
-        player2ForGame[gameId] = address(0);
-        balances[_msgSender()] = 0;
-
-        emit Player2WithdrewBalance(gameId);
     }
 
     function whoWins(Choice choice1, Choice choice2) private pure returns (uint8) {
