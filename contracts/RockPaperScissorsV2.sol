@@ -19,53 +19,40 @@ enum Choice {
 
 error TransferFailed();
 error ShouldNeverHappen();
-//seconds in a week
-uint256 constant oneweek = 604800;
-
-struct CommitChoice {
-    address player;
-    Choice choice;
-    uint256 timestamp;
-}
 
 contract RockPaperScissorsV2 is Context {
     IERC20 private erc20;
     uint256 public time = 0;
     uint256 public lastGameId = 0;
 
-    //player => password
-    mapping(address => bytes32) private playerPasswords;
+    //gameid => game status
+    mapping(uint256 => GameStatus) public status;
+    //gameiD=> player1 choice
+    mapping(uint256 => Choice) public player1Choices;
+    //gameid => player 2 choice
+    mapping(uint256 => Choice) public player2Choices;
+
     // //gameid => player 1
     mapping(uint256 => address) public player1ForGame;
     // //gameid => player 2
     mapping(uint256 => address) public player2ForGame;
 
-    mapping(uint256 => CommitChoice) public commitChoicesForGame;
-
-    //gameid => game status
-    mapping(uint256 => GameStatus) public status;
-    //gameid => player 1 bet
-    mapping(uint256 => uint256) public gameBet;
-    //player addres => [gameId => bytes32 hash]
-    mapping(address => mapping(uint256 => bytes32)) public commits;
-
-    //gameiD=> player1 choice
-    mapping(uint256 => Choice) public player1Choices;
-
     //gameId => player1 revealead
     mapping(uint256 => bool) public player1Revealed;
-
-    //player 1 play timestamp
-    mapping(uint256 => uint256) public player1Timestamp;
-
     //gameId player 2 revealed
     mapping(uint256 => bool) public player2Revealed;
 
-    //gameid => player 2 choice
-    mapping(uint256 => Choice) public player2Choices;
+    //player 1 play timestamp
+    mapping(uint256 => uint256) public player1Timestamp;
+    //gameid => player 1 bet
+    mapping(uint256 => uint256) public gameBet;
 
     //player => balance
     mapping(address => uint256) public balances;
+    //player addres => [gameId => bytes32 hash]
+    mapping(address => mapping(uint256 => bytes32)) public commits;
+    //player => password
+    mapping(address => bytes32) private playerPasswords;
 
     event Player1Commited(uint256 gameId);
     event Player2Commited(uint256 gameId);
@@ -81,23 +68,17 @@ contract RockPaperScissorsV2 is Context {
         erc20 = _erc20;
     }
 
-    function login(string memory password) public {
+    function login(string memory password) external {
         require(playerPasswords[_msgSender()] == bytes32(0), "you have already logged in");
         playerPasswords[_msgSender()] = hashPassword(password);
     }
 
-    function hashChoice(Choice data) public view returns (bytes32) {
+    function hashChoice(Choice data) private view returns (bytes32) {
         return keccak256(abi.encodePacked(address(this), playerPasswords[_msgSender()], data));
     }
 
-    function hashPassword(string memory password) public pure returns (bytes32) {
+    function hashPassword(string memory password) private pure returns (bytes32) {
         return keccak256(abi.encodePacked(password));
-    }
-
-    modifier onlyLoggedIn(string memory password) {
-        require(playerPasswords[_msgSender()] != bytes32(0), "you are not loggedIn");
-        require(playerPasswords[_msgSender()] == hashPassword(password), "invalid password");
-        _;
     }
 
     function player1Commit(
@@ -105,7 +86,6 @@ contract RockPaperScissorsV2 is Context {
         uint256 _amount,
         string memory password
     ) external onlyLoggedIn(password) {
-        // effects
         lastGameId++;
 
         gameBet[lastGameId] = _amount;
@@ -120,7 +100,6 @@ contract RockPaperScissorsV2 is Context {
 
         commits[_msgSender()][lastGameId] = hashChoice(choice);
 
-        //interactions
         bool success = erc20.transferFrom(_msgSender(), address(this), _amount);
         if (!success) {
             revert TransferFailed();
@@ -244,7 +223,10 @@ contract RockPaperScissorsV2 is Context {
     function player1WithdrawBalance(uint256 gameId) external {
         require(player1ForGame[gameId] == _msgSender(), "invalid game id");
         require((player1Timestamp[gameId] + 1 weeks) < getCurrentTime(), "you cannnot withdraw your bet yet");
-        require(status[gameId] == GameStatus.COMMITING || status[gameId] == GameStatus.REVEALING , "this game is not in the COMMITING or REVEALING status");
+        require(
+            status[gameId] == GameStatus.COMMITING || status[gameId] == GameStatus.REVEALING,
+            "this game is not in the COMMITING or REVEALING status"
+        );
 
         bool success = erc20.transfer(_msgSender(), gameBet[gameId]);
         if (!success) {
@@ -260,30 +242,37 @@ contract RockPaperScissorsV2 is Context {
         if (choice1 == choice2) {
             return 0;
         }
-        if (choice1 == Choice.ROCK) {
-            if (choice2 == Choice.PAPER) {
-                return 2;
-            }
-            if (choice2 == Choice.SCISSORS) {
-                return 1;
-            }
+
+        if (choice1 == Choice.ROCK && choice2 == Choice.PAPER) {
+            return 2;
         }
-        if (choice1 == Choice.PAPER) {
-            if (choice2 == Choice.ROCK) {
-                return 1;
-            }
-            if (choice2 == Choice.SCISSORS) {
-                return 2;
-            }
+
+        if (choice1 == Choice.ROCK && choice2 == Choice.SCISSORS) {
+            return 1;
         }
-        if (choice1 == Choice.SCISSORS) {
-            if (choice2 == Choice.ROCK) {
-                return 2;
-            }
-            if (choice2 == Choice.PAPER) {
-                return 1;
-            }
+
+        if (choice1 == Choice.PAPER && choice2 == Choice.ROCK) {
+            return 1;
         }
+
+        if (choice1 == Choice.PAPER && choice2 == Choice.SCISSORS) {
+            return 2;
+        }
+
+        if (choice1 == Choice.SCISSORS && choice2 == Choice.ROCK) {
+            return 2;
+        }
+
+        if (choice1 == Choice.SCISSORS && choice2 == Choice.PAPER) {
+            return 1;
+        }
+
         revert ShouldNeverHappen();
+    }
+
+    modifier onlyLoggedIn(string memory password) {
+        require(playerPasswords[_msgSender()] != bytes32(0), "you are not loggedIn");
+        require(playerPasswords[_msgSender()] == hashPassword(password), "invalid password");
+        _;
     }
 }
