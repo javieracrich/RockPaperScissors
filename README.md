@@ -1,4 +1,4 @@
-# Rock Paper Scissors challenge for Exactly
+# Rock Paper Scissors challenge
 
 - [Hardhat](https://github.com/nomiclabs/hardhat): compile and run the smart contracts on a local development network
 - [TypeChain](https://github.com/ethereum-ts/TypeChain): generate TypeScript types for smart contracts
