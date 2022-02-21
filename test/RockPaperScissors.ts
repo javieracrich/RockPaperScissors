@@ -34,345 +34,345 @@ async function deployContracts(): Promise<[RockPaperScissors, MockDai]> {
   return [<RockPaperScissors>rockPaperScissors, <MockDai>dai];
 }
 
-describe("RockPaperScissors Unit tests", function () {
-  let owner, player1: SignerWithAddress, player2: SignerWithAddress;
+// describe("RockPaperScissors Unit tests", function () {
+//   let owner, player1: SignerWithAddress, player2: SignerWithAddress;
 
-  beforeEach(async function () {
-    [owner, player1, player2] = await hre.ethers.getSigners();
-  });
+//   beforeEach(async function () {
+//     [owner, player1, player2] = await hre.ethers.getSigners();
+//   });
 
-  it("Players have enough money to play", async function () {
-    const [_, dai] = await deployContracts();
-    expect(await dai.balanceOf(player1.address)).to.equal(utils.parseEther("3000"));
-    expect(await dai.balanceOf(player1.address)).to.equal(utils.parseEther("3000"));
-  });
+//   it("Players have enough money to play", async function () {
+//     const [_, dai] = await deployContracts();
+//     expect(await dai.balanceOf(player1.address)).to.equal(utils.parseEther("3000"));
+//     expect(await dai.balanceOf(player1.address)).to.equal(utils.parseEther("3000"));
+//   });
 
-  it("Should enroll player 1 with 1000 dai", async function () {
-    //arrange
-    const [RPS, dai] = await deployContracts();
-    const bet = utils.parseEther("1000");
-    const gameId = 1;
+//   it("Should enroll player 1 with 1000 dai", async function () {
+//     //arrange
+//     const [RPS, dai] = await deployContracts();
+//     const bet = utils.parseEther("1000");
+//     const gameId = 1;
 
-    const RPS1 = RPS.connect(player1);
-    const dai1 = dai.connect(player1);
+//     const RPS1 = RPS.connect(player1);
+//     const dai1 = dai.connect(player1);
 
-    await dai1.approve(RPS1.address, bet);
+//     await dai1.approve(RPS1.address, bet);
 
-    //act
-    await expect(RPS1.enrollPlayer1(bet)).to.emit(RPS, "Player1Enrolled").withArgs(gameId);
+//     //act
+//     await expect(RPS1.enrollPlayer1(bet)).to.emit(RPS, "Player1Enrolled").withArgs(gameId);
 
-    const expectedBet = await RPS1.gameBet(gameId);
-    //assert
-    await expect((await RPS1.lastGameId()).toString()).to.equal(gameId + "");
-    await expect(expectedBet.toString()).to.equal(bet.toString());
-    await expect((await RPS1.player1ForGame(gameId)).toString()).to.equal(player1.address);
-    await expect((await RPS1.balances(player1.address)).toString()).to.equal(bet.toString());
-    await expect((await RPS1.status(gameId)).toString()).to.equal(GameStatus.ENROLLING + "");
-    await expect((await RPS1.activePlayer(player1.address)).toString()).to.equal("true");
-    await expect((await dai.balanceOf(RPS.address)).toString()).to.equal(bet.toString());
-  });
+//     const expectedBet = await RPS1.gameBet(gameId);
+//     //assert
+//     await expect((await RPS1.lastGameId()).toString()).to.equal(gameId + "");
+//     await expect(expectedBet.toString()).to.equal(bet.toString());
+//     await expect((await RPS1.player1ForGame(gameId)).toString()).to.equal(player1.address);
+//     await expect((await RPS1.balances(player1.address)).toString()).to.equal(bet.toString());
+//     await expect((await RPS1.status(gameId)).toString()).to.equal(GameStatus.ENROLLING + "");
+//     await expect((await RPS1.activePlayer(player1.address)).toString()).to.equal("true");
+//     await expect((await dai.balanceOf(RPS.address)).toString()).to.equal(bet.toString());
+//   });
 
-  it("player 1 tries to enroll twice - should fail", async function () {
-    //arrange
-    const [RPS, dai] = await deployContracts();
-    const bet = utils.parseEther("1000");
+//   it("player 1 tries to enroll twice - should fail", async function () {
+//     //arrange
+//     const [RPS, dai] = await deployContracts();
+//     const bet = utils.parseEther("1000");
 
-    const RPS1 = RPS.connect(player1);
-    const dai1 = dai.connect(player1);
+//     const RPS1 = RPS.connect(player1);
+//     const dai1 = dai.connect(player1);
 
-    await dai1.approve(RPS1.address, bet);
+//     await dai1.approve(RPS1.address, bet);
 
-    //act
-    await RPS1.enrollPlayer1(bet);
+//     //act
+//     await RPS1.enrollPlayer1(bet);
 
-    //assert
-    await expect(RPS1.enrollPlayer1(bet)).to.be.revertedWith("you can only play one game at once");
-  });
+//     //assert
+//     await expect(RPS1.enrollPlayer1(bet)).to.be.revertedWith("you can only play one game at once");
+//   });
 
-  it("player 2 tries to enroll twice - should fail", async function () {
+//   it("player 2 tries to enroll twice - should fail", async function () {
 
-    //arrange
-    const [RPS, dai] = await deployContracts();
-    const bet = utils.parseEther("1000");
-    const gameId = 1;
+//     //arrange
+//     const [RPS, dai] = await deployContracts();
+//     const bet = utils.parseEther("1000");
+//     const gameId = 1;
 
-    const RPS1 = RPS.connect(player1);
-    const RPS2 = RPS.connect(player2);
+//     const RPS1 = RPS.connect(player1);
+//     const RPS2 = RPS.connect(player2);
 
-    const dai1 = dai.connect(player1);
-    const dai2 = dai.connect(player2);
+//     const dai1 = dai.connect(player1);
+//     const dai2 = dai.connect(player2);
 
-    await dai1.approve(RPS1.address, bet);
+//     await dai1.approve(RPS1.address, bet);
 
-    //act
-    await expect(RPS1.enrollPlayer1(bet)).to.emit(RPS, "Player1Enrolled").withArgs(gameId);
+//     //act
+//     await expect(RPS1.enrollPlayer1(bet)).to.emit(RPS, "Player1Enrolled").withArgs(gameId);
 
-    await dai2.approve(RPS2.address, bet);
+//     await dai2.approve(RPS2.address, bet);
 
-    //assert
-    await expect(RPS2.enrollPlayer2(bet, gameId)).to.emit(RPS, "Player2Enrolled").withArgs(gameId);
-    await expect(RPS2.enrollPlayer2(bet, gameId)).to.be.revertedWith("you can only play one game at once");
-  });
+//     //assert
+//     await expect(RPS2.enrollPlayer2(bet, gameId)).to.emit(RPS, "Player2Enrolled").withArgs(gameId);
+//     await expect(RPS2.enrollPlayer2(bet, gameId)).to.be.revertedWith("you can only play one game at once");
+//   });
 
-  it("should enroll player 1 and 2 - happy path", async function () {
-    //arrange
-    const [RPS, dai] = await deployContracts();
-    const bet = utils.parseEther("1000");
-    const gameId = 1;
+//   it("should enroll player 1 and 2 - happy path", async function () {
+//     //arrange
+//     const [RPS, dai] = await deployContracts();
+//     const bet = utils.parseEther("1000");
+//     const gameId = 1;
 
-    const RPS1 = RPS.connect(player1);
-    const RPS2 = RPS.connect(player2);
+//     const RPS1 = RPS.connect(player1);
+//     const RPS2 = RPS.connect(player2);
 
-    const dai1 = dai.connect(player1);
-    const dai2 = dai.connect(player2);
+//     const dai1 = dai.connect(player1);
+//     const dai2 = dai.connect(player2);
 
-    await dai1.approve(RPS1.address, bet);
+//     await dai1.approve(RPS1.address, bet);
 
-    //act
-    await expect(RPS1.enrollPlayer1(bet)).to.emit(RPS, "Player1Enrolled").withArgs(gameId);
+//     //act
+//     await expect(RPS1.enrollPlayer1(bet)).to.emit(RPS, "Player1Enrolled").withArgs(gameId);
 
-    await dai2.approve(RPS2.address, bet);
+//     await dai2.approve(RPS2.address, bet);
 
-    await expect(RPS2.enrollPlayer2(bet, gameId)).to.emit(RPS, "Player2Enrolled").withArgs(gameId);
+//     await expect(RPS2.enrollPlayer2(bet, gameId)).to.emit(RPS, "Player2Enrolled").withArgs(gameId);
 
-  });
+//   });
 
-  it("should enroll player 1 with zero dai", async function () {
-    //arrange
-    const [RPS, dai] = await deployContracts();
-    const bet = utils.parseEther("0");
-    const gameId = 1;
+//   it("should enroll player 1 with zero dai", async function () {
+//     //arrange
+//     const [RPS, dai] = await deployContracts();
+//     const bet = utils.parseEther("0");
+//     const gameId = 1;
 
-    const RPS1 = RPS.connect(player1);
-    const dai1 = dai.connect(player1);
+//     const RPS1 = RPS.connect(player1);
+//     const dai1 = dai.connect(player1);
 
-    await dai1.approve(RPS1.address, bet);
+//     await dai1.approve(RPS1.address, bet);
 
-    //act
-    await expect(RPS1.enrollPlayer1(bet)).to.emit(RPS, "Player1Enrolled").withArgs(gameId);
+//     //act
+//     await expect(RPS1.enrollPlayer1(bet)).to.emit(RPS, "Player1Enrolled").withArgs(gameId);
 
-    const expectedBet = await RPS1.gameBet(gameId);
+//     const expectedBet = await RPS1.gameBet(gameId);
 
-    //assert
-    await expect((await RPS1.lastGameId()).toString()).to.equal(gameId + "");
-    await expect(expectedBet.toString()).to.equal(bet.toString());
-    await expect((await RPS1.player1ForGame(gameId)).toString()).to.equal(player1.address);
-    await expect((await RPS1.balances(player1.address)).toString()).to.equal(bet.toString());
-    await expect((await RPS1.status(gameId)).toString()).to.equal(GameStatus.ENROLLING + "");
-    await expect((await RPS1.activePlayer(player1.address)).toString()).to.equal("true");
-    await expect((await dai.balanceOf(RPS.address)).toString()).to.equal(bet.toString());
+//     //assert
+//     await expect((await RPS1.lastGameId()).toString()).to.equal(gameId + "");
+//     await expect(expectedBet.toString()).to.equal(bet.toString());
+//     await expect((await RPS1.player1ForGame(gameId)).toString()).to.equal(player1.address);
+//     await expect((await RPS1.balances(player1.address)).toString()).to.equal(bet.toString());
+//     await expect((await RPS1.status(gameId)).toString()).to.equal(GameStatus.ENROLLING + "");
+//     await expect((await RPS1.activePlayer(player1.address)).toString()).to.equal("true");
+//     await expect((await dai.balanceOf(RPS.address)).toString()).to.equal(bet.toString());
 
-  });
+//   });
 
-  it("player 2 tries to enroll to non existing game - should fail", async function () {
+//   it("player 2 tries to enroll to non existing game - should fail", async function () {
 
-    //arrange
-    const [RPS, dai] = await deployContracts();
-    const bet = utils.parseEther("1000");
-    const gameId = 1;
+//     //arrange
+//     const [RPS, dai] = await deployContracts();
+//     const bet = utils.parseEther("1000");
+//     const gameId = 1;
 
-    const RPS1 = RPS.connect(player1);
-    const RPS2 = RPS.connect(player2);
+//     const RPS1 = RPS.connect(player1);
+//     const RPS2 = RPS.connect(player2);
 
-    const dai1 = dai.connect(player1);
-    const dai2 = dai.connect(player2);
+//     const dai1 = dai.connect(player1);
+//     const dai2 = dai.connect(player2);
 
-    await dai1.approve(RPS1.address, bet);
+//     await dai1.approve(RPS1.address, bet);
 
-    //act
-    await expect(RPS1.enrollPlayer1(bet)).to.emit(RPS, "Player1Enrolled").withArgs(gameId);
+//     //act
+//     await expect(RPS1.enrollPlayer1(bet)).to.emit(RPS, "Player1Enrolled").withArgs(gameId);
 
-    await dai2.approve(RPS2.address, bet);
+//     await dai2.approve(RPS2.address, bet);
 
-    const inexistentGame = 56
-    //assert
-    await expect(RPS2.enrollPlayer2(bet, inexistentGame)).to.be.revertedWith("there is no player 1 for this game");
+//     const inexistentGame = 56
+//     //assert
+//     await expect(RPS2.enrollPlayer2(bet, inexistentGame)).to.be.revertedWith("there is no player 1 for this game");
 
-  });
+//   });
 
-  it("player 1 tries to enroll again after player 2 did", async function () {
-    //arrange
-    const [RPS, dai] = await deployContracts();
-    const bet = utils.parseEther("1000");
-    const gameId = 1;
+//   it("player 1 tries to enroll again after player 2 did", async function () {
+//     //arrange
+//     const [RPS, dai] = await deployContracts();
+//     const bet = utils.parseEther("1000");
+//     const gameId = 1;
 
-    const RPS1 = RPS.connect(player1);
-    const RPS2 = RPS.connect(player2);
+//     const RPS1 = RPS.connect(player1);
+//     const RPS2 = RPS.connect(player2);
 
-    const dai1 = dai.connect(player1);
-    const dai2 = dai.connect(player2);
+//     const dai1 = dai.connect(player1);
+//     const dai2 = dai.connect(player2);
 
-    await dai1.approve(RPS1.address, bet);
+//     await dai1.approve(RPS1.address, bet);
 
-    //act
-    await expect(RPS1.enrollPlayer1(bet)).to.emit(RPS, "Player1Enrolled").withArgs(gameId);
+//     //act
+//     await expect(RPS1.enrollPlayer1(bet)).to.emit(RPS, "Player1Enrolled").withArgs(gameId);
 
-    await dai2.approve(RPS2.address, bet);
+//     await dai2.approve(RPS2.address, bet);
 
-    //assert 
-    await expect(RPS2.enrollPlayer2(bet, gameId)).to.emit(RPS, "Player2Enrolled").withArgs(gameId);
-    await expect(RPS1.enrollPlayer1(bet)).to.be.revertedWith("you can only play one game at once");
-  });
+//     //assert 
+//     await expect(RPS2.enrollPlayer2(bet, gameId)).to.emit(RPS, "Player2Enrolled").withArgs(gameId);
+//     await expect(RPS1.enrollPlayer1(bet)).to.be.revertedWith("you can only play one game at once");
+//   });
 
-  it("player 1 plays, then player 2, it is a tie", async function () {
-    //arrange
-    const [RPS, dai] = await deployContracts();
-    const bet = utils.parseEther("1000");
-    const gameId = 1;
+//   it("player 1 plays, then player 2, it is a tie", async function () {
+//     //arrange
+//     const [RPS, dai] = await deployContracts();
+//     const bet = utils.parseEther("1000");
+//     const gameId = 1;
 
-    const RPS1 = RPS.connect(player1);
-    const RPS2 = RPS.connect(player2);
+//     const RPS1 = RPS.connect(player1);
+//     const RPS2 = RPS.connect(player2);
 
-    const dai1 = dai.connect(player1);
-    const dai2 = dai.connect(player2);
+//     const dai1 = dai.connect(player1);
+//     const dai2 = dai.connect(player2);
 
-    await dai1.approve(RPS1.address, bet);
+//     await dai1.approve(RPS1.address, bet);
 
-    //act
-    await expect(RPS1.enrollPlayer1(bet)).to.emit(RPS, "Player1Enrolled").withArgs(gameId);
+//     //act
+//     await expect(RPS1.enrollPlayer1(bet)).to.emit(RPS, "Player1Enrolled").withArgs(gameId);
 
-    await dai2.approve(RPS2.address, bet);
+//     await dai2.approve(RPS2.address, bet);
 
-    await expect(RPS2.enrollPlayer2(bet, gameId)).to.emit(RPS, "Player2Enrolled").withArgs(gameId);
+//     await expect(RPS2.enrollPlayer2(bet, gameId)).to.emit(RPS, "Player2Enrolled").withArgs(gameId);
 
-    //start playing
-    await RPS1.player1Plays(GameValue.PAPER, gameId);
+//     //start playing
+//     await RPS1.player1Plays(GameValue.PAPER, gameId);
 
-    //assert 
-    await expect(await RPS2.player2Plays(GameValue.PAPER, gameId)).to.emit(RPS1, "Tie").withArgs(gameId);
-    await expect((await RPS2.balances(player1.address)).toString()).to.equal(utils.parseEther("1000").toString());
-    await expect((await RPS2.balances(player2.address)).toString()).to.equal(utils.parseEther("1000").toString());
+//     //assert 
+//     await expect(await RPS2.player2Plays(GameValue.PAPER, gameId)).to.emit(RPS1, "Tie").withArgs(gameId);
+//     await expect((await RPS2.balances(player1.address)).toString()).to.equal(utils.parseEther("1000").toString());
+//     await expect((await RPS2.balances(player2.address)).toString()).to.equal(utils.parseEther("1000").toString());
 
-  });
+//   });
 
-  it("player 1 plays, then player 2, player 1 wins", async function () {
-    //arrange
-    const [RPS, dai] = await deployContracts();
-    const bet = utils.parseEther("1000");
-    const gameId = 1;
+//   it("player 1 plays, then player 2, player 1 wins", async function () {
+//     //arrange
+//     const [RPS, dai] = await deployContracts();
+//     const bet = utils.parseEther("1000");
+//     const gameId = 1;
 
-    const RPS1 = RPS.connect(player1);
-    const RPS2 = RPS.connect(player2);
+//     const RPS1 = RPS.connect(player1);
+//     const RPS2 = RPS.connect(player2);
 
-    const dai1 = dai.connect(player1);
-    const dai2 = dai.connect(player2);
+//     const dai1 = dai.connect(player1);
+//     const dai2 = dai.connect(player2);
 
-    await dai1.approve(RPS1.address, bet);
+//     await dai1.approve(RPS1.address, bet);
 
-    //act
-    await expect(RPS1.enrollPlayer1(bet)).to.emit(RPS, "Player1Enrolled").withArgs(gameId);
+//     //act
+//     await expect(RPS1.enrollPlayer1(bet)).to.emit(RPS, "Player1Enrolled").withArgs(gameId);
 
-    await dai2.approve(RPS2.address, bet);
-    await expect(RPS2.enrollPlayer2(bet, gameId)).to.emit(RPS, "Player2Enrolled").withArgs(gameId);
+//     await dai2.approve(RPS2.address, bet);
+//     await expect(RPS2.enrollPlayer2(bet, gameId)).to.emit(RPS, "Player2Enrolled").withArgs(gameId);
 
-    //start playing
+//     //start playing
 
-    await RPS1.player1Plays(GameValue.PAPER, gameId);
+//     await RPS1.player1Plays(GameValue.PAPER, gameId);
 
-    //assert 
-    await expect(await RPS2.player2Plays(GameValue.ROCK, gameId)).to.emit(RPS1, "Player1Wins").withArgs(gameId);
-    await expect((await RPS2.balances(player1.address)).toString()).to.equal(utils.parseEther("2000").toString());
-    await expect((await RPS2.balances(player2.address)).toString()).to.equal(utils.parseEther("0").toString());
-  });
+//     //assert 
+//     await expect(await RPS2.player2Plays(GameValue.ROCK, gameId)).to.emit(RPS1, "Player1Wins").withArgs(gameId);
+//     await expect((await RPS2.balances(player1.address)).toString()).to.equal(utils.parseEther("2000").toString());
+//     await expect((await RPS2.balances(player2.address)).toString()).to.equal(utils.parseEther("0").toString());
+//   });
 
-  it("player 1 plays, then player 2, player 2 wins", async function () {
-    //arrange
-    const [RPS, dai] = await deployContracts();
-    const bet = utils.parseEther("1000");
-    const gameId = 1;
+//   it("player 1 plays, then player 2, player 2 wins", async function () {
+//     //arrange
+//     const [RPS, dai] = await deployContracts();
+//     const bet = utils.parseEther("1000");
+//     const gameId = 1;
 
-    const RPS1 = RPS.connect(player1);
-    const RPS2 = RPS.connect(player2);
+//     const RPS1 = RPS.connect(player1);
+//     const RPS2 = RPS.connect(player2);
 
-    const dai1 = dai.connect(player1);
-    const dai2 = dai.connect(player2);
+//     const dai1 = dai.connect(player1);
+//     const dai2 = dai.connect(player2);
 
-    await dai1.approve(RPS1.address, bet);
+//     await dai1.approve(RPS1.address, bet);
 
-    //act
-    await expect(RPS1.enrollPlayer1(bet)).to.emit(RPS, "Player1Enrolled").withArgs(gameId);
-    await dai2.approve(RPS2.address, bet);
-    await expect(RPS2.enrollPlayer2(bet, gameId)).to.emit(RPS, "Player2Enrolled").withArgs(gameId);
+//     //act
+//     await expect(RPS1.enrollPlayer1(bet)).to.emit(RPS, "Player1Enrolled").withArgs(gameId);
+//     await dai2.approve(RPS2.address, bet);
+//     await expect(RPS2.enrollPlayer2(bet, gameId)).to.emit(RPS, "Player2Enrolled").withArgs(gameId);
 
 
-    //start playing
-    await RPS1.player1Plays(GameValue.PAPER, gameId);
-    //assert 
-    await expect(await RPS2.player2Plays(GameValue.SCISSORS, gameId)).to.emit(RPS1, "Player2Wins").withArgs(gameId);
-    await expect((await RPS2.balances(player1.address)).toString()).to.equal(utils.parseEther("0").toString());
-    await expect((await RPS2.balances(player2.address)).toString()).to.equal(utils.parseEther("2000").toString());
-  });
+//     //start playing
+//     await RPS1.player1Plays(GameValue.PAPER, gameId);
+//     //assert 
+//     await expect(await RPS2.player2Plays(GameValue.SCISSORS, gameId)).to.emit(RPS1, "Player2Wins").withArgs(gameId);
+//     await expect((await RPS2.balances(player1.address)).toString()).to.equal(utils.parseEther("0").toString());
+//     await expect((await RPS2.balances(player2.address)).toString()).to.equal(utils.parseEther("2000").toString());
+//   });
 
-  it("player 1 plays and tries to withdraw bet in less than a week", async function () {
-    const [RPS, dai] = await deployContracts();
-    const bet = utils.parseEther("1000");
-    const gameId = 1;
+//   it("player 1 plays and tries to withdraw bet in less than a week", async function () {
+//     const [RPS, dai] = await deployContracts();
+//     const bet = utils.parseEther("1000");
+//     const gameId = 1;
 
-    const RPS1 = RPS.connect(player1);
-    const RPS2 = RPS.connect(player2);
+//     const RPS1 = RPS.connect(player1);
+//     const RPS2 = RPS.connect(player2);
 
-    const dai1 = dai.connect(player1);
-    const dai2 = dai.connect(player2);
+//     const dai1 = dai.connect(player1);
+//     const dai2 = dai.connect(player2);
 
-    await dai1.approve(RPS1.address, bet);
-    await RPS1.enrollPlayer1(bet);
+//     await dai1.approve(RPS1.address, bet);
+//     await RPS1.enrollPlayer1(bet);
 
-    await dai2.approve(RPS2.address, bet);
-    await RPS2.enrollPlayer2(bet, gameId);
+//     await dai2.approve(RPS2.address, bet);
+//     await RPS2.enrollPlayer2(bet, gameId);
 
-    await RPS1.player1Plays(GameValue.ROCK, gameId);
+//     await RPS1.player1Plays(GameValue.ROCK, gameId);
 
-    await IncreaseTime(RPS1, ONEDAY);
+//     await IncreaseTime(RPS1, ONEDAY);
 
-    await expect(RPS1.player1WithdrawBalance(gameId)).to.be.revertedWith("you cannnot withdraw your bet yet");
+//     await expect(RPS1.player1WithdrawBalance(gameId)).to.be.revertedWith("you cannnot withdraw your bet yet");
 
-  });
+//   });
 
 
-  it("player 1 plays,  player 2 does not play after one week, then player 1 recovers funds, then player 2 recovers funds too", async function () {
-    //arrange
-    const [RPS, dai] = await deployContracts();
-    const bet = utils.parseEther("1000");
-    const gameId = 1;
+//   it("player 1 plays,  player 2 does not play after one week, then player 1 recovers funds, then player 2 recovers funds too", async function () {
+//     //arrange
+//     const [RPS, dai] = await deployContracts();
+//     const bet = utils.parseEther("1000");
+//     const gameId = 1;
 
-    const RPS1 = RPS.connect(player1);
-    const RPS2 = RPS.connect(player2);
+//     const RPS1 = RPS.connect(player1);
+//     const RPS2 = RPS.connect(player2);
 
-    const dai1 = dai.connect(player1);
-    const dai2 = dai.connect(player2);
+//     const dai1 = dai.connect(player1);
+//     const dai2 = dai.connect(player2);
 
-    await dai1.approve(RPS1.address, bet);
+//     await dai1.approve(RPS1.address, bet);
 
-    //act
-    await expect(RPS1.enrollPlayer1(bet)).to.emit(RPS, "Player1Enrolled").withArgs(gameId);
+//     //act
+//     await expect(RPS1.enrollPlayer1(bet)).to.emit(RPS, "Player1Enrolled").withArgs(gameId);
 
-    await dai2.approve(RPS2.address, bet);
+//     await dai2.approve(RPS2.address, bet);
 
-    await expect(RPS2.enrollPlayer2(bet, gameId)).to.emit(RPS, "Player2Enrolled").withArgs(gameId);
+//     await expect(RPS2.enrollPlayer2(bet, gameId)).to.emit(RPS, "Player2Enrolled").withArgs(gameId);
 
-    await RPS1.player1Plays(GameValue.ROCK, gameId);
+//     await RPS1.player1Plays(GameValue.ROCK, gameId);
 
-    await IncreaseTime(RPS1, ONEWEEK * 2);
+//     await IncreaseTime(RPS1, ONEWEEK * 2);
 
-    await expect(RPS1.player1WithdrawBalance(gameId)).to.emit(RPS1, "Player1WithdrewBalance").withArgs(gameId);
-    await expect((await RPS1.activePlayer(player1.address)).toString()).to.equal("false")
-    await expect((await RPS1.player1ForGame(gameId)).toString()).to.equal("0x0000000000000000000000000000000000000000");
-    await expect((await RPS1.balances(player1.address)).toString()).to.equal("0");
-    await expect((await dai1.balanceOf(player1.address))).to.equal(utils.parseEther("3000"));
+//     await expect(RPS1.player1WithdrawBalance(gameId)).to.emit(RPS1, "Player1WithdrewBalance").withArgs(gameId);
+//     await expect((await RPS1.activePlayer(player1.address)).toString()).to.equal("false")
+//     await expect((await RPS1.player1ForGame(gameId)).toString()).to.equal("0x0000000000000000000000000000000000000000");
+//     await expect((await RPS1.balances(player1.address)).toString()).to.equal("0");
+//     await expect((await dai1.balanceOf(player1.address))).to.equal(utils.parseEther("3000"));
 
-    await IncreaseTime(RPS1, ONEWEEK);
+//     await IncreaseTime(RPS1, ONEWEEK);
 
-    await expect(RPS2.player2WithdrawBalance(gameId)).to.emit(RPS1, "Player2WithdrewBalance").withArgs(gameId);
+//     await expect(RPS2.player2WithdrawBalance(gameId)).to.emit(RPS1, "Player2WithdrewBalance").withArgs(gameId);
 
-    await expect((await RPS2.activePlayer(player2.address)).toString()).to.equal("false")
-    await expect((await RPS2.player1ForGame(gameId)).toString()).to.equal("0x0000000000000000000000000000000000000000");
-    await expect((await RPS2.balances(player2.address)).toString()).to.equal("0");
-    await expect((await dai2.balanceOf(player2.address))).to.equal(utils.parseEther("3000"));
-  });
+//     await expect((await RPS2.activePlayer(player2.address)).toString()).to.equal("false")
+//     await expect((await RPS2.player1ForGame(gameId)).toString()).to.equal("0x0000000000000000000000000000000000000000");
+//     await expect((await RPS2.balances(player2.address)).toString()).to.equal("0");
+//     await expect((await dai2.balanceOf(player2.address))).to.equal(utils.parseEther("3000"));
+//   });
 
-  async function IncreaseTime(contract: RockPaperScissors, seconds: number) {
-    let time = await contract.getCurrentTime();
-    time = time.add(seconds);
-    await contract.setCurrentTime(time);
-  }
-});
+//   async function IncreaseTime(contract: RockPaperScissors, seconds: number) {
+//     let time = await contract.getCurrentTime();
+//     time = time.add(seconds);
+//     await contract.setCurrentTime(time);
+//   }
+// });

@@ -17,13 +17,18 @@ enum Choice {
     SCISSORS
 }
 
+struct Game {
+    uint256 game;
+    bool active;
+}
+
 error TransferFailed();
 error ShouldNeverHappen();
 
-contract RockPaperScissorsV2 is Context {
+contract RockPaperScissorsV2 is Ownable {
     IERC20 private erc20;
     uint256 public time = 0;
-    uint256 public lastGameId = 0;
+    uint256 public lastGameId = 1;
 
     //gameid => game status
     mapping(uint256 => GameStatus) public status;
@@ -39,10 +44,10 @@ contract RockPaperScissorsV2 is Context {
 
     //gameId => player1 revealead
     mapping(uint256 => bool) public player1Revealed;
-    //gameId player 2 revealed
+    //gameId => player 2 revealed
     mapping(uint256 => bool) public player2Revealed;
 
-    //player 1 play timestamp
+    //player 1 => play timestamp
     mapping(uint256 => uint256) public player1Timestamp;
     //gameid => player 1 bet
     mapping(uint256 => uint256) public gameBet;
@@ -54,6 +59,12 @@ contract RockPaperScissorsV2 is Context {
     //player => password
     mapping(address => bytes32) private playerPasswords;
 
+    mapping(uint256 => bool) public gameActive;
+
+    uint256 public feeBalance = 0;
+
+    uint256 public percentage = 1;
+
     event Player1Commited(uint256 gameId);
     event Player2Commited(uint256 gameId);
     event Player1Wins(uint256 gameId);
@@ -63,14 +74,31 @@ contract RockPaperScissorsV2 is Context {
     event Player2WithdrewBalance(uint256 gameId);
     event Player1Revealed(uint256 gameId);
     event Player2Revealed(uint256 gameId);
+    event PlayerLoggedIn(address player);
 
     constructor(IERC20 _erc20) {
         erc20 = _erc20;
     }
 
+    function extract() external onlyOwner {
+        bool success = erc20.transfer(_msgSender(), feeBalance);
+        if (!success) {
+            revert TransferFailed();
+        }
+    }
+
+    function configureFees(uint256 _percentage) external onlyOwner {
+        percentage = _percentage;
+    }
+
     function login(string memory password) external {
+        require(
+            bytes(password).length >= 6 && bytes(password).length <= 20,
+            "password must have between 6 and 20 characters"
+        );
         require(playerPasswords[_msgSender()] == bytes32(0), "you have already logged in");
         playerPasswords[_msgSender()] = hashPassword(password);
+        emit PlayerLoggedIn(_msgSender());
     }
 
     function hashChoice(Choice data) private view returns (bytes32) {
@@ -86,7 +114,7 @@ contract RockPaperScissorsV2 is Context {
         uint256 _amount,
         string memory password
     ) external onlyLoggedIn(password) {
-        lastGameId++;
+        (uint256 fee, uint256 rest) = calculateFee(_amount, percentage);
 
         gameBet[lastGameId] = _amount;
 
@@ -96,9 +124,13 @@ contract RockPaperScissorsV2 is Context {
 
         player1Timestamp[lastGameId] = getCurrentTime();
 
-        balances[_msgSender()] = _amount;
+        balances[_msgSender()] = rest;
 
         commits[_msgSender()][lastGameId] = hashChoice(choice);
+
+        feeBalance = feeBalance + fee;
+
+        gameActive[lastGameId] = true;
 
         bool success = erc20.transferFrom(_msgSender(), address(this), _amount);
         if (!success) {
@@ -106,21 +138,8 @@ contract RockPaperScissorsV2 is Context {
         }
 
         emit Player1Commited(lastGameId);
-    }
 
-    //only for testing purposes, remove for prod
-    //this is used to mock current time for testing
-    function getCurrentTime() public view returns (uint256) {
-        if (time == 0) {
-            return block.timestamp;
-        } else {
-            return time;
-        }
-    }
-
-    //only for testing purposes, remove for prod
-    function setCurrentTime(uint256 _time) external {
-        time = _time;
+        lastGameId++;
     }
 
     function player2Commit(
@@ -136,10 +155,13 @@ contract RockPaperScissorsV2 is Context {
         require(player1ForGame[gameId] != address(0), "you can't play because player 1 withdrew the bet");
 
         //effects
+        (uint256 fee, uint256 rest) = calculateFee(_amount, percentage);
         player2ForGame[gameId] = _msgSender();
         status[gameId] = GameStatus.REVEALING;
-        balances[_msgSender()] = _amount;
-        commits[_msgSender()][lastGameId] = hashChoice(choice);
+        balances[_msgSender()] = rest;
+        commits[_msgSender()][gameId] = hashChoice(choice);
+
+        feeBalance = feeBalance + fee;
 
         //interactions
         bool success = erc20.transferFrom(_msgSender(), address(this), _amount);
@@ -195,27 +217,33 @@ contract RockPaperScissorsV2 is Context {
 
         uint8 who = whoWins(player1Choices[gameId], player2Choices[gameId]);
         if (who == 0) {
+            transfer(player1);
+            transfer(player2);
             emit Tie(gameId);
         }
         if (who == 1) {
-            balances[player1] = balances[player1] + balances[player2];
-            balances[player2] = 0;
+            transferBalanceFromPlayerToPlayer(player2, player1);
             emit Player1Wins(gameId);
         }
         if (who == 2) {
-            balances[player2] = balances[player2] + balances[player1];
-            balances[player1] = 0;
+            transferBalanceFromPlayerToPlayer(player1, player2);
             emit Player2Wins(gameId);
         }
+
+        gameActive[gameId] = false;
+
         status[gameId] = GameStatus.FINISHED;
+    }
 
-        bool success1 = erc20.transfer(player1, balances[player1]);
-        if (!success1) {
-            revert TransferFailed();
-        }
+    function transferBalanceFromPlayerToPlayer(address from, address to) private {
+        balances[to] = balances[to] + balances[from];
+        balances[from] = 0;
+        transfer(to);
+    }
 
-        bool success2 = erc20.transfer(player2, balances[player2]);
-        if (!success2) {
+    function transfer(address player) private {
+        bool success = erc20.transfer(player, balances[player]);
+        if (!success) {
             revert TransferFailed();
         }
     }
@@ -234,7 +262,7 @@ contract RockPaperScissorsV2 is Context {
         }
         player1ForGame[gameId] = address(0);
         balances[_msgSender()] = 0;
-
+        gameActive[gameId] = false;
         emit Player1WithdrewBalance(gameId);
     }
 
@@ -268,6 +296,27 @@ contract RockPaperScissorsV2 is Context {
         }
 
         revert ShouldNeverHappen();
+    }
+
+    function calculateFee(uint256 _amount, uint256 _percentage) public pure returns (uint256, uint256) {
+        uint256 fee = (_amount / 100) * _percentage;
+        uint256 rest = _amount - fee;
+        return (fee, rest);
+    }
+
+    //only for testing purposes, remove for prod
+    //this is used to mock current time for testing
+    function getCurrentTime() public view returns (uint256) {
+        if (time == 0) {
+            return block.timestamp;
+        } else {
+            return time;
+        }
+    }
+
+    //only for testing purposes, remove for prod
+    function setCurrentTime(uint256 _time) external {
+        time = _time;
     }
 
     modifier onlyLoggedIn(string memory password) {
